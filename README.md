@@ -1,6 +1,6 @@
 # MemePanel
 
-表情包速发面板。常驻托盘，`Ctrl+Shift+.` 呼出，搜索/选中/Enter 即发（GIF 保留动画）。**纯 C + Win32 + GDI+，无 CRT、零运行时依赖，单文件 exe（约 110 KB）**。视觉为 SWISS 黑白设计：纸白方角面 + 2px 墨框 + 单一强调色，零圆角零阴影零渐变。
+表情包速发面板。常驻托盘，`Ctrl+Shift+.` 呼出，搜索/选中/Enter 即发（GIF 保留动画）。**纯 C + Win32 + GDI+，无 CRT、零运行时依赖，单文件 exe（约 110 KB），托盘常驻仅约 12 MB 私有内存**（实测隐藏态；弹出按需重建合成表面，收起即释放）。视觉为 SWISS 黑白设计：纸白方角面 + 2px 墨框 + 单一强调色，零圆角零阴影零渐变。
 
 👉 下载：[Releases](https://github.com/Traveritas/MemePanel/releases)（exe 放任意目录直接运行，库与配置随 exe 走，绿色便携）
 

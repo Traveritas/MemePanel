@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif-sc: "Noto Serif SC", "Songti SC", serif;
+  --font-sans-sc: "Noto Sans SC", "PingFang SC", sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+  --font-display: "Instrument Serif", "Noto Serif SC", serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans-sc);
+  background: #e6dfd2;
+  color: #1c1916;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+  border-radius: 0;
+  appearance: none;
+}
+
+::selection {
+  background: #b43a2f;
+  color: #efe8dc;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.tracking-label {
+  letter-spacing: 0.18em;
+}
+
+@keyframes caret-blink {
+  0%,
+  46% {
+    opacity: 1;
+  }
+  47%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.caret-blink {
+  animation: caret-blink 1.05s steps(1) infinite;
+}
+
+@keyframes toast-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toast-up {
+  animation: toast-up 160ms steps(3, end);
+}
+
+@keyframes gif-tick {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.gif-tick {
+  animation: gif-tick 0.9s steps(2, end) infinite;
+}
+
+@keyframes send-flash {
+  0% {
+    outline-color: currentColor;
+  }
+  100% {
+    outline-color: transparent;
+  }
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.hairline {
+  box-shadow: inset 0 -1px 0 0 currentColor;
+}
+
+.gdi-shadow-ink {
+  box-shadow: 3px 3px 0 0 #1c1916;
+}
+
+.gdi-shadow-hard {
+  box-shadow: 4px 6px 0 0 rgba(0, 0, 0, 0.45);
+}
+
+/* Win11 taskbar approximation — desktop chrome only, not the GDI panel */
+.win-taskbar {
+  background: rgba(22, 24, 28, 0.72);
+  backdrop-filter: blur(20px);
+}
+
+.win-chat {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+}

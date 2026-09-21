@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Win32 GDI 真实上限 · 效果概念</title>
+<style>
+:root{
+  --desk1:#2b3040; --desk2:#1a1d28;
+  --glass:rgba(22,24,32,.72);
+  --stroke:rgba(255,255,255,.10);
+  --text:#eceef4; --text2:#a6adbd; --text3:#71798c;
+  --accent:#7aa2ff; --accent2:#b28bff;
+  --ok:#69d58c;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",system-ui,"Microsoft YaHei UI",sans-serif;color:var(--text);
+  background:
+    radial-gradient(1200px 600px at 20% -10%, #3a4258 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 110%, #40365a 0%, transparent 55%),
+    linear-gradient(160deg,var(--desk1),var(--desk2));
+  min-height:100vh;padding:34px 28px 90px}
+header{max-width:1180px;margin:0 auto 8px}
+h1{font-size:22px;font-weight:700;letter-spacing:.01em}
+header p{font-size:13.5px;color:var(--text2);margin-top:6px;line-height:1.7;max-width:860px}
+header p b{color:var(--text)}
+.grid{max-width:1180px;margin:26px auto 0;display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.card{background:rgba(255,255,255,.035);border:1px solid var(--stroke);border-radius:16px;padding:18px 20px;position:relative}
+.card h2{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card h2 .no{font-size:11px;color:var(--text3);font-family:Consolas,monospace}
+.api{font-size:11px;color:var(--ok);background:rgba(105,213,140,.08);border:1px solid rgba(105,213,140,.22);border-radius:6px;padding:2px 8px;display:inline-block;margin-top:8px;font-family:Consolas,monospace}
+.demo{margin-top:16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.cap{font-size:11.5px;color:var(--text3);margin-top:12px;line-height:1.6}
+.cap b{color:var(--text2)}
+/* ---- 1 软阴影 ---- */
+.shadow-card{width:210px;height:110px;border-radius:14px;background:#20232e;border:1px solid var(--stroke);
+  box-shadow:0 22px 48px rgba(0,0,0,.55),0 6px 14px rgba(0,0,0,.40);
+  display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--text2)}
+.shadow-old{box-shadow:6px 6px 0 #000}
+/* ---- 2 玻璃 ---- */
+.frost{width:230px;height:120px;border-radius:14px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(300px 120px at 10% 0%, rgba(255,255,255,.16), transparent 70%),
+    linear-gradient(120deg, rgba(255,255,255,.055), rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 18px 40px rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--text);
+  backdrop-filter:blur(2px)}
+.frost-bg{width:250px;height:120px;border-radius:10px;overflow:hidden;position:relative;
+  background:conic-gradient(from 30deg,#a25a7a,#3f6fa8,#48a08a,#a8863f,#a25a7a);display:flex;align-items:center;justify-content:center}
+.frost-bg .frost{position:absolute;inset:12px 30px;width:auto;height:auto}
+/* ---- 3 渐变 ---- */
+.grad-demo{display:flex;gap:14px;align-items:center}
+.grad-bar{width:200px;height:12px;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:0 0 18px rgba(122,162,255,.45)}
+.btn-grad{border:none;border-radius:12px;padding:12px 26px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;
+  background:radial-gradient(120% 160% at 20% 0%, #8fb0ff 0%, #5a7ce8 55%, #4257c4 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 10px 24px rgba(90,124,232,.35)}
+.btn-flat{border-radius:12px;padding:12px 26px;font-size:13px;font-weight:600;color:var(--text2);background:#252834;border:1px solid var(--stroke);cursor:pointer;font-family:inherit}
+/* ---- 4 抗锯齿圆角/曲线 ---- */
+.aa-demo{display:flex;gap:22px;align-items:center}
+.ring{width:92px;height:92px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 32% 28%, #2c3140, #1b1e28 70%);box-shadow:inset 0 1px 1px rgba(255,255,255,.15),0 10px 22px rgba(0,0,0,.4)}
+.ring svg{position:absolute;inset:0}
+.squircle{width:92px;height:92px;border-radius:30px;background:linear-gradient(150deg,#39415a,#232738);border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 12px 26px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:30px}
+.jag{width:92px;height:92px;border-radius:30px;background:#232738;border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)}
+.jag .c{width:52px;height:52px;border-radius:50%;border:2px solid var(--accent);image-rendering:pixelated}
+/* ---- 5 点阵/发光 ---- */
+.dots{width:210px;height:96px;border-radius:12px;position:relative;overflow:hidden;background:#1d2029;
+  background-image:radial-gradient(rgba(255,255,255,.13) 1px, transparent 1.4px);background-size:7px 7px}
+.glow-chip{position:absolute;right:14px;bottom:14px;font-size:12px;color:#dfe6ff;background:rgba(122,162,255,.16);
+  border:1px solid rgba(122,162,255,.55);border-radius:99px;padding:5px 13px;
+  box-shadow:0 0 22px rgba(122,162,255,.55), inset 0 0 12px rgba(122,162,255,.25)}
+/* ================= 终极合成面板 ================= */
+.final{max-width:1180px;margin:34px auto 0}
+.final h2{font-size:16px;font-weight:700;margin-bottom:4px}
+.final .sub{font-size:12.5px;color:var(--text3);margin-bottom:18px}
+.stage{height:560px;border-radius:18px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(700px 380px at 15% 8%, #465073 0%, transparent 60%),
+    radial-gradient(560px 320px at 95% 92%, #5a4a80 0%, transparent 55%),
+    linear-gradient(150deg,#272c3c,#171a25 70%);
+  border:1px solid var(--stroke)}
+/* 模拟桌面上的假聊天气泡做背景 */
+.bub{position:absolute;font-size:12px;color:#cfd4e4;background:rgba(255,255,255,.06);border:1px solid var(--stroke);border-radius:14px;padding:10px 14px;backdrop-filter:blur(2px)}
+.b1{left:40px;top:36px}.b2{left:70px;top:92px}.b3{left:46px;top:150px;max-width:240px}
+/* 主角面板 */
+.panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-52%);width:700px;
+  border-radius:20px;
+  background:
+    radial-gradient(600px 200px at 8% -4%, rgba(255,255,255,.10), transparent 60%),
+    linear-gradient(165deg, rgba(30,33,45,.90), rgba(20,22,31,.86));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 4px 10px rgba(0,0,0,.32),
+    0 30px 70px rgba(0,0,0,.55);
+  backdrop-filter:blur(2px);
+  padding:16px 18px 12px}
+.p-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.p-search{flex:1;display:flex;align-items:center;gap:9px;height:38px;border-radius:11px;padding:0 13px;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);color:var(--text3);font-size:13px;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.28)}
+.p-search b{color:var(--accent);font-weight:400}
+.p-count{font-size:11px;color:var(--text3);font-family:Consolas,monospace}
+.p-recent{display:flex;gap:9px;margin-bottom:6px}
+.p-recent .pm{width:72px;height:72px;border-radius:13px;position:relative;flex:none;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 14px rgba(0,0,0,.30);
+  background:linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.02))}
+.p-recent .pm .e{font-size:30px}
+.p-recent .pm .k{position:absolute;top:5px;left:5px;font-size:10px;color:#dfe6ff;background:rgba(15,17,26,.7);border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:0 5px;font-family:Consolas,monospace}
+.p-cap{font-size:10.5px;color:var(--text3);margin:2px 0 10px 2px}
+.p-chips{display:flex;gap:7px;margin-bottom:12px}
+.pc{font-size:12px;color:var(--text2);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:99px;padding:4px 13px}
+.pc.on{color:#eef1ff;background:linear-gradient(120deg,rgba(122,162,255,.28),rgba(178,139,255,.22));border-color:rgba(122,162,255,.6);
+  box-shadow:0 0 16px rgba(122,162,255,.30)}
+.p-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:9px}
+.pg{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;
+  border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.pg .e{font-size:23px}
+.pg.hot{background:radial-gradient(120% 120% at 30% 20%,rgba(122,162,255,.20),rgba(255,255,255,.03) 60%);border-color:rgba(122,162,255,.38)}
+.pg:hover{border-color:rgba(122,162,255,.75);box-shadow:0 0 18px rgba(122,162,255,.35);transform:translateY(-2px)}
+.pg .nm{display:none;position:absolute;left:0;right:0;bottom:0;font-size:9.5px;color:#fff;background:linear-gradient(transparent,rgba(8,9,14,.88) 45%);padding:9px 6px 4px;border-radius:0 0 10px 10px}
+.pg:hover .nm{display:block}
+/* 底部诚实表 */
+.truth{max-width:1180px;margin:30px auto 0;border:1px solid var(--stroke);border-radius:14px;overflow:hidden}
+.truth table{width:100%;border-collapse:collapse;font-size:12.5px}
+.truth th{background:rgba(255,255,255,.05);text-align:left;padding:10px 14px;color:var(--text2);font-weight:600;font-size:12px}
+.truth td{padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);color:var(--text2);vertical-align:top}
+.truth td:first-child{color:var(--text);white-space:nowrap}
+.y{color:var(--ok)} .n{color:#e07a7a} .m{color:#e0b37a}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Win32 GDI 的真实上限 —— 被低估的系统绘图全家桶</h1>
+  <p>设计稿把 GDI 当成"只能 FillRect + 1px 线 + 硬阴影"的 1995 年水平。实际上系统自带 <b>msimg32（AlphaBlend / GradientFill）</b>、<b>gdiplus.dll（抗锯齿矢量/渐变刷）</b> 和 <b>UpdateLayeredWindow（逐像素半透明窗口）</b>——全部零依赖、纯 C 可调。下面每个效果都标注了真实 API 路径，最后合成一张完整面板概念。</p>
+</header>
+
+<div class="grid">
+  <div class="card">
+    <h2><span class="no">01</span>真·软阴影</h2>
+    <div class="demo">
+      <div class="shadow-card shadow-old">旧认知：offset 实心矩形</div>
+      <div class="shadow-card">实际：柔和的多层阴影</div>
+    </div>
+    <div class="api">AlphaBlend × 预计算 32bpp alpha 阴影位图</div>
+    <div class="cap"><b>做法</b>：启动时生成一张径向渐变 alpha 的圆角阴影位图（或 3-5 层不同半径/透明度），绘制时 AlphaBlend 一次盖章。静态预计算 + 一次调用，成本≈0。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">02</span>半透明面板 + 磨砂玻璃</h2>
+    <div class="demo">
+      <div class="frost-bg"><div class="frost">面板悬浮在桌面/聊天窗之上</div></div>
+    </div>
+    <div class="api">UpdateLayeredWindow（逐像素 alpha 窗口）</div>
+    <div class="cap"><b>做法</b>：整个窗口用 32bpp DIB + UpdateLayeredWindow 呈现，任意圆角/异形/半透明，边缘天然抗锯齿；"磨砂"= 面板打开瞬间截取桌面区域 StretchBlt 降采样 + 半透明遮罩叠一次（经典 trick，静态成本）。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">03</span>线性 / 径向渐变</h2>
+    <div class="demo">
+      <div class="grad-bar"></div>
+      <button class="btn-grad">发送</button>
+      <button class="btn-flat">对比：纯色</button>
+    </div>
+    <div class="api">GradientFill（msimg32）· GDI+ LinearGradientBrush / PathGradientBrush</div>
+    <div class="cap"><b>做法</b>：GradientFill 原生支持多色 stops 的水平/垂直渐变；GDI+ 另有径向/路径渐变（高光按钮、发光强调条）。均为系统 DLL，一次初始化后每帧只画缓存位图。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">04</span>抗锯齿圆角、圆环与曲线</h2>
+    <div class="demo">
+      <div class="aa-demo">
+        <div class="jag"><div class="c"></div>锯齿（旧认知）</div>
+        <div class="ring">
+          <svg width="92" height="92" viewBox="0 0 92 92"><circle cx="46" cy="46" r="38" fill="none" stroke="#7aa2ff" stroke-width="5" stroke-linecap="round" stroke-dasharray="180 239" transform="rotate(-90 46 46)"/><circle cx="46" cy="46" r="38" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="5"/></svg>
+          <span style="font-size:13px;color:var(--text2);position:relative">75%</span>
+        </div>
+        <div class="squircle">🐱</div>
+      </div>
+    </div>
+    <div class="api">GDI+（GdipDrawArc 抗锯齿）· 或 2x 超采样 + StretchBlt 缩小</div>
+    <div class="cap"><b>做法</b>：gdiplus.dll 的 flat API（GdipSetSmoothingMode）给所有圆/弧/曲线开抗锯齿；不想引 GDI+ 就把 GDI 画到 2x 内存位图再 StretchBlt 缩一半 = 全场景抗锯齿（二手工惯例）。</div>
+  </div>
+
+  <div class="card" style="grid-column:span 2">
+    <h2><span class="no">05</span>点阵纹理 · 光晕强调（克制地发光）</h2>
+    <div class="demo">
+      <div class="dots">
+        <span class="glow-chip">高频 ✦ 37 次</span>
+      </div>
+      <div class="cap" style="margin-top:0;flex:1;min-width:260px">
+        <b>做法</b>：点阵 = CreatePatternBrush（7×7 单色位图做刷子，零运行时成本）；光晕 = 预渲染的径向 alpha 位图 + AlphaBlend 叠在强调元素下。用于"高频"标签、选中态、进度环——点到为止，不做全屏光污染。
+      </div>
+    </div>
+    <div class="api">CreatePatternBrush · AlphaBlend × 预渲染 glow 位图</div>
+  </div>
+</div>
+
+<!-- ============ 合成面板 ============ -->
+<div class="final">
+  <h2>合成演示 · 全部能力叠加后的 MemePanel 概念</h2>
+  <div class="sub">软阴影悬浮 · 玻璃面板（假磨砂+边缘高光）· 渐变强调 · 抗锯齿圆角 · 发光选中态 · 高频格微光 —— 全部可在纯 GDI+msimg32 60fps 实现</div>
+  <div class="stage">
+    <div class="bub">今晚开黑吗</div>
+    <div class="bub b2">等你半天了……</div>
+    <div class="bub b3">再不来我就把你的表情包全部偷走发群里 😈</div>
+
+    <div class="panel">
+      <div class="p-top">
+        <div class="p-search"><b>⌕</b>&nbsp;搜索表情…&nbsp;<span style="margin-left:auto;font-size:11px">Ctrl+Shift+.</span></div>
+        <span class="p-count">128 items</span>
+      </div>
+      <div class="p-cap">最近 · 按 1–9 直接发送</div>
+      <div class="p-recent">
+        <div class="pm"><span class="k">1</span><span class="e">🐱</span></div>
+        <div class="pm"><span class="k">2</span><span class="e">😅</span></div>
+        <div class="pm"><span class="k">3</span><span class="e">🤡</span></div>
+        <div class="pm"><span class="k">4</span><span class="e">😱</span></div>
+        <div class="pm"><span class="k">5</span><span class="e">🫠</span></div>
+        <div class="pm"><span class="k">6</span><span class="e">🤖</span></div>
+        <div class="pm" style="background:linear-gradient(150deg,rgba(122,162,255,.18),rgba(255,255,255,.02));border-color:rgba(122,162,255,.4)"><span class="k">7</span><span class="e">🥵</span></div>
+      </div>
+      <div class="p-chips">
+        <span class="pc on">⚡ 高频</span><span class="pc">全部</span><span class="pc">猫猫</span><span class="pc">熊猫头</span><span class="pc">代码</span><span class="pc">流汗系列</span>
+      </div>
+      <div class="p-grid">
+        <div class="pg hot"><span class="e">😺</span><span class="nm">猫猫点头.gif</span></div>
+        <div class="pg"><span class="e">🐈</span><span class="nm">黑猫警长.jpg</span></div>
+        <div class="pg hot"><span class="e">🥲</span><span class="nm">绷不住.gif</span></div>
+        <div class="pg"><span class="e">😋</span><span class="nm">馋哭了.jpg</span></div>
+        <div class="pg"><span class="e">😻</span><span class="nm">星星眼.jpg</span></div>
+        <div class="pg"><span class="e">🫢</span><span class="nm">就这就这.gif</span></div>
+        <div class="pg"><span class="e">🤯</span><span class="nm">报错了.jpg</span></div>
+        <div class="pg"><span class="e">6️⃣</span><span class="nm">6.jpg</span></div>
+        <div class="pg"><span class="e">🐉</span><span class="nm">曹操.gif</span></div>
+        <div class="pg"><span class="e">✅</span><span class="nm">编译通过.gif</span></div>
+        <div class="pg"><span class="e">🤔</span><span class="nm">问号猫.jpg</span></div>
+        <div class="pg"><span class="e">😤</span><span class="nm">急了急了.gif</span></div>
+        <div class="pg"><span class="e">📜</span><span class="nm">典.jpg</span></div>
+        <div class="pg"><span class="e">🤣</span><span class="nm">乐.png</span></div>
+        <div class="pg"><span class="e">💔</span><span class="nm">裂开.jpg</span></div>
+        <div class="pg"><span class="e">🛋️</span><span class="nm">开摆.gif</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="truth">
+  <table>
+    <tr><th style="width:190px">效果</th><th>GDI 家族能否实现</th><th>真实路径 / 代价</th></tr>
+    <tr><td>软阴影</td><td class="y">✔ 完全可以</td><td>预计算 alpha 阴影位图 + AlphaBlend 盖章；静态资源，运行时几乎免费</td></tr>
+    <tr><td>半透明 / 异形窗口</td><td class="y">✔ 完全可以</td><td>UpdateLayeredWindow；注意 EDIT 子控件需改自绘或 WS_EX_LAYERED 子窗口（工程量 +1）</td></tr>
+    <tr><td>磨砂玻璃（实时背景模糊）</td><td class="m">◐ 假磨砂可以</td><td>打开瞬间截桌面降采样 + 半透明遮罩（静态）；<b>实时</b>模糊超出 GDI——除非再借 d2d1.dll 的 GaussianBlur（也是系统自带、零依赖，严格说已不算 GDI）</td></tr>
+    <tr><td>线性/径向渐变</td><td class="y">✔ 完全可以</td><td>GradientFill（msimg32）/ GDI+ 渐变刷；每帧重画渐变也不贵，且可缓存成位图</td></tr>
+    <tr><td>抗锯齿圆角/圆/弧/文字</td><td class="y">✔ 完全可以</td><td>GDI+ 一行开平滑；或 2x 超采样（无新依赖，内存×4 依然小）</td></tr>
+    <tr><td>点阵/纹理填充</td><td class="y">✔ 完全可以</td><td>CreatePatternBrush，原生</td></tr>
+    <tr><td>发光/Glow</td><td class="y">✔ 可以（预渲染）</td><td>径向 alpha 位图 + AlphaBlend；不支持任意实时参数化的辉光，但 UI 发光本来就应是静态强调</td></tr>
+    <tr><td>每帧实时高斯模糊 / 粒子系统</td><td class="n">✘ 不行</td><td>这是唯一真正的边界；硬要的话 d2d1.dll 的 effect 管线（系统自带）可以做，但架构就变 D2D 了</td></tr>
+  </table>
+</div>
+
+</body>
+</html>

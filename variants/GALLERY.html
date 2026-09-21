@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MemePanel GDI 设计变体画廊 · 2026-09-19 夜</title>
+<style>
+  :root {
+    --bg: #101217; --panel: #171a21; --line: #262b36;
+    --ink: #e8ecf4; --sub: #9aa3b5; --acc: #7aa2ff; --acc2: #b28bff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink);
+         font: 15px/1.65 "Segoe UI", "Microsoft YaHei UI", sans-serif; padding: 40px 4vw 80px; }
+  header { max-width: 1480px; margin: 0 auto 36px; }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: .5px; }
+  h1 span { color: var(--acc); }
+  header p { color: var(--sub); margin-top: 8px; max-width: 860px; }
+  header p b { color: var(--ink); font-weight: 600; }
+  .legend { display: flex; gap: 18px; margin-top: 14px; font-size: 13px; color: var(--sub); flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+  main { max-width: 1480px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 44px; }
+  .variant { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .vhead { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .vnum { font: 700 13px Consolas; color: var(--acc); letter-spacing: 1px; }
+  .vname { font-size: 19px; font-weight: 650; }
+  .vtag { font-size: 12.5px; color: var(--sub); }
+  .status { margin-left: auto; font-size: 12px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--sub); }
+  .status.ok { color: #7ee2a8; border-color: #2c4a3a; }
+  .status.partial { color: #ffcf7e; border-color: #4a402c; }
+  .vdesc { color: var(--sub); font-size: 13.5px; margin-bottom: 16px; max-width: 980px; }
+  .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .shot { background: #0b0d11; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot .cap { padding: 8px 12px; font-size: 12px; color: var(--sub); display: flex; justify-content: space-between; }
+  .shot .cap b { color: var(--ink); font-weight: 600; }
+  .vnotes { margin-top: 14px; font-size: 12.5px; color: var(--sub); border-top: 1px dashed var(--line); padding-top: 12px; }
+  .vnotes code { color: #c8d2e8; background: #0b0d11; padding: 1px 6px; border-radius: 4px; font-size: 11.5px; }
+  footer { max-width: 1480px; margin: 48px auto 0; color: var(--sub); font-size: 12.5px;
+           border-top: 1px solid var(--line); padding-top: 18px; }
+  @media (max-width: 900px) { .shots { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>MemePanel <span>GDI 设计变体画廊</span></h1>
+  <p>2026-09-19 深夜自主会话产出：以 v0.6.1「琉璃 HALO」为基线，用新增的<b>无头渲染管线</b>
+     （<code>-shot</code> 直接从合成 DIB 导出 PNG，不依赖屏幕截图与模拟输入）并行探索的
+     <b>10 个设计方向</b>。每张截图 = 与真实窗口完全相同的渲染路径 + 同一确定性桌面背景，公平可比。
+     浏览器直接打开本页即可；点击图片可放大（新标签页打开原图）。</p>
+  <div class="legend">
+    <span><i style="background:#7ee2a8"></i>验收通过</span>
+    <span><i style="background:#ffcf7e"></i>部分完成（见备注）</span>
+    <span>三图 = 速发常态 / 悬停态（高亮+名字条+168px 大图）/ 管理模式（选中态）</span>
+  </div>
+  <div class="vdesc" style="background:#141821;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:16px">
+    <b style="color:var(--ink)">主智能体推荐（设计总监视角，供参考）</b>——
+    <b>第一梯队（可直接采纳）</b>：01 琉璃精修（风险最低的纯工艺升级，建议直接进 v0.6.2）·
+    09 指令面板（唯一动信息架构的方向，Raycast 验证过的速发范式，值得真机试一周）·
+    02 液态玻璃（琉璃完全体，结构零风险）。<br>
+    <b>第二梯队（有个性候选）</b>：04 杂志版式（排版之美，密度-25%）· 05 瑞士网格（密度冠军，冷静）·
+    03 宣纸墨（辨识度之王，浅色风险需真机判断）。<br>
+    <b>第三梯队（氛围特化看口味）</b>：08 底片印样 · 07 果冻糖 · 10 复古像素 · 06 霓虹终端。<br>
+    组合建议：<b>01 的工艺修复 + 09 的列表布局</b> 或 <b>01 + 02</b> 都是有据可依的融合路线。
+  </div>
+</header>
+<main>
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">BASE</span><span class="vname">琉璃 HALO v0.6.1（基线）</span>
+      <span class="vtag">深色玻璃 · 当前正式方案</span>
+      <span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">对照锚点：其余 10 个方向都在回答「除了它还能长什么样」。此基线今晚同步获得：
+      -shot 无头验证模式、footer 尾随分隔符修复。</div>
+    <div class="shots">
+      <div class="shot"><a href="shot_panel.png" target="_blank"><img src="shot_panel.png" alt="基线速发" onerror="this.parentNode.style.display='none'"></a><div class="cap"><b>速发常态</b><span>app/</span></div></div>
+      <div class="shot"><a href="shot_hover.png" target="_blank"><img src="shot_hover.png" alt="基线悬停" onerror="this.parentNode.style.display='none'"></a><div class="cap"><b>悬停态</b><span>app/</span></div></div>
+      <div class="shot"><a href="shot_mgr_sel.png" target="_blank"><img src="shot_mgr_sel.png" alt="基线管理" onerror="this.parentNode.style.display='none'"></a><div class="cap"><b>管理模式</b><span>app/</span></div></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 第一梯队：可直接采纳 ══════════════ -->
+
+  <section class="variant" style="border-color:#2c4a3a">
+    <div class="vhead">
+      <span class="vnum">01 · 梯队一</span><span class="vname">琉璃精修 HALO-REFINE</span>
+      <span class="vtag">基线工艺拉满 · 升级即所得</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">原路线的余量证明：悬停存在感提升（上浮3px/亮边230/微光0.34）、全站 4px 间距模数、激活胶囊厚度感、悬浮式滚动条、大图取景角标、空态引导、管理删除红色语义分离。顺手修掉基线 5 个潜伏 bug（名字条遮罩从未渲染、图注折行、勾角标被图盖住等）。</div>
+    <div class="shots">
+      <div class="shot"><a href="01-halo-refine/shot_panel.png" target="_blank"><img src="01-halo-refine/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>61 KB</span></div></div>
+      <div class="shot"><a href="01-halo-refine/shot_hover.png" target="_blank"><img src="01-halo-refine/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>取景角标预览</span></div></div>
+      <div class="shot"><a href="01-halo-refine/shot_mgr_sel.png" target="_blank"><img src="01-halo-refine/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>红色武装态</span></div></div>
+    </div>
+    <div class="vnotes">推荐理由：用户已定稿的「琉璃」身份不动，纯工艺升级，风险最低收益直接。可作为 v0.6.2 的主体。</div>
+  </section>
+
+  <section class="variant" style="border-color:#2c4a3a">
+    <div class="vhead">
+      <span class="vnum">09 · 梯队一</span><span class="vname">指令面板 PALETTE</span>
+      <span class="vtag">唯一信息架构革命 · Raycast 式列表</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">网格 → 垂直结果列表：竖长面板（38% 宽）、顶部命令行搜索（Consolas + 块状光标）、56px 信息行（缩略图+名称+标签/大小/格式元数据）、选中行渐变底+左缘电紫条+「↵ 发送」、大图贴右缘弹出。↑↓ 行级导航已实现。呼出即搜索的肌肉记忆最贴合「速发 ≤2 秒」的产品本质。</div>
+    <div class="shots">
+      <div class="shot"><a href="09-palette/shot_panel.png" target="_blank"><img src="09-palette/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>63 KB</span></div></div>
+      <div class="shot"><a href="09-palette/shot_hover.png" target="_blank"><img src="09-palette/shot_hover.png" alt=""></a><div class="cap"><b>选中态</b><span>右缘预览</span></div></div>
+      <div class="shot"><a href="09-palette/shot_mgr_sel.png" target="_blank"><img src="09-palette/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>网格保留</span></div></div>
+    </div>
+    <div class="vnotes">推荐理由：成熟产品验证过的交互范式（Raycast/Alfred），唯一动「逻辑层面」的方向——正是用户当初点破的要害。值得真机试一周。代价：一屏可见张数少于网格。</div>
+  </section>
+
+  <section class="variant" style="border-color:#2c4a3a">
+    <div class="vhead">
+      <span class="vnum">02 · 梯队一</span><span class="vname">液态玻璃 LIQUID</span>
+      <span class="vtag">材质最大化 · 琉璃 2.0</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">玻璃从隐喻变材质：三段通透渐变、水平折射光带、对角镜面 streak、左冷右暖三层色散边、液态格底（法线受光）、胶囊白高光弧+反光点、最近行与标签合并为一条 dock。五件质感件全部预渲染，性能无虞。</div>
+    <div class="shots">
+      <div class="shot"><a href="02-liquid/shot_panel.png" target="_blank"><img src="02-liquid/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>64 KB</span></div></div>
+      <div class="shot"><a href="02-liquid/shot_hover.png" target="_blank"><img src="02-liquid/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>液滴受光</span></div></div>
+      <div class="shot"><a href="02-liquid/shot_mgr_sel.png" target="_blank"><img src="02-liquid/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>同材质</span></div></div>
+    </div>
+    <div class="vnotes">推荐理由：如果「琉璃」要继续往下走，这是它的完全体。气质高级、结构零风险（与基线同构）。注意与壁纸的相关性最强——浅色壁纸上需再调。</div>
+  </section>
+
+  <!-- ══════════════ 第二梯队：有个性的候选 ══════════════ -->
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">04 · 梯队二</span><span class="vname">杂志版式 EDITORIAL</span>
+      <span class="vtag">排版即界面 · 黑白+正红</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">深炭纸面 + 衬线大标题刊头（No.42 卷号）+ 发丝线分区 + 无胶囊标签（激活=正红下划线）+ 每格编号图注 + fig. 图注 footer + 红色页码。红色严格五处，编辑设计纪律森严。</div>
+    <div class="shots">
+      <div class="shot"><a href="04-editorial/shot_panel.png" target="_blank"><img src="04-editorial/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>59 KB</span></div></div>
+      <div class="shot"><a href="04-editorial/shot_hover.png" target="_blank"><img src="04-editorial/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>无动效排版切换</span></div></div>
+      <div class="shot"><a href="04-editorial/shot_mgr_sel.png" target="_blank"><img src="04-editorial/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>栏目条按钮</span></div></div>
+    </div>
+    <div class="vnotes">最有「出版物质感」的方向；图注行牺牲一屏密度（约 -25%），适合欣赏型浏览多于速发。</div>
+  </section>
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">05 · 梯队二</span><span class="vname">瑞士网格 SWISS</span>
+      <span class="vtag">国际主义 · <b style="color:#7ee2a8">用户选定主方向（v2 精修 + v3 检视抽屉完成）</b></span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">纸白方角 + 2px 墨黑外框 + 德语大写标签（ALLE/TIERE/KATZEN）+ 密排图片墙。<b>v2</b>：删四角文字、主题色可设置（托盘预设+自定义+theme.cfg）。<b>v3（管理模式重设计）</b>：「管理模式」概念整体移除——右键格子 → 右缘展开 300px <b>检视抽屉</b>（预览+淡化文件名+标签批量打标+索引文字即时保存+武装删除）；Ctrl+点击多选（四角角标）；数据模型 v2（每图可存索引文字，搜索=标签∪索引∪文件名⊕开关）；修后缀改为扫描后静默自动；去重移入托盘「维护」；方向键网格导航+回车速发；修复 IDM_MGR/IDM_TAG_BASE 同值历史 bug。</div>
+    <div class="shots">
+      <div class="shot"><a href="05-swiss/shot_panel.png" target="_blank"><img src="05-swiss/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>62 KB</span></div></div>
+      <div class="shot"><a href="05-swiss/shot_drawer.png" target="_blank"><img src="05-swiss/shot_drawer.png" alt=""></a><div class="cap"><b>检视抽屉（单目标）</b><span>索引文字+标签</span></div></div>
+      <div class="shot"><a href="05-swiss/shot_drawer_batch.png" target="_blank"><img src="05-swiss/shot_drawer_batch.png" alt=""></a><div class="cap"><b>检视抽屉（批量 3 张）</b><span>角标多选</span></div></div>
+    </div>
+    <div class="vnotes">密度最高（图片墙吃满）、秩序感最强；「冷静工具」气质。情感温度低是双刃剑。</div>
+  </section>
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">03 · 梯队二</span><span class="vname">宣纸墨 PAPER-INK</span>
+      <span class="vtag">唯一浅色方向 · 文房气质</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">暖白宣纸（纸纤维噪点）+ 浓墨文字 + 唯一强调色朱砂印章红（严格五处）：印章式激活标签（带凹痕）、无框搜索（底部墨线/聚焦转红）、「搜」楷体字记、册页装订线最近行、楷体题签+宋体正文的字体体系。空态文案「拖入表情，落纸为安」。</div>
+    <div class="shots">
+      <div class="shot"><a href="03-paper-ink/shot_panel.png" target="_blank"><img src="03-paper-ink/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>57 KB</span></div></div>
+      <div class="shot"><a href="03-paper-ink/shot_hover.png" target="_blank"><img src="03-paper-ink/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>红边+墨遮罩</span></div></div>
+      <div class="shot"><a href="03-paper-ink/shot_mgr_sel.png" target="_blank"><img src="03-paper-ink/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>印章红武装</span></div></div>
+    </div>
+    <div class="vnotes">辨识度最高的美学方向；浅色面板在深色壁纸上的观感、夜间刺眼度需要真机体验判断。</div>
+  </section>
+
+  <!-- ══════════════ 第三梯队：氛围特化 ══════════════ -->
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">08 · 梯队三</span><span class="vname">底片印样 DARKROOM</span>
+      <span class="vtag">摄影师工作台 · contact sheet</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">哑光炭相纸 + 顶部胶片盒标签条（ISO 042/36）+ 左缘 22px 齿孔带 + 底片格（上下胶片暗边）+ 每格帧编号（GIF=琥珀）+ 悬停 grease pencil 手绘红圈（双缺口+笔帽）+ loupe 放大镜预览（相纸白框）+ 胶片刻度滚动条。</div>
+    <div class="shots">
+      <div class="shot"><a href="08-darkroom/shot_panel.png" target="_blank"><img src="08-darkroom/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>61 KB</span></div></div>
+      <div class="shot"><a href="08-darkroom/shot_hover.png" target="_blank"><img src="08-darkroom/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>grease pencil 圈选</span></div></div>
+      <div class="shot"><a href="08-darkroom/shot_mgr_sel.png" target="_blank"><img src="08-darkroom/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>手绘 X 选中</span></div></div>
+    </div>
+    <div class="vnotes">隐喻与产品（浏览图片库）最契合的主题；齿孔/编号条略吃左右空间。</div>
+  </section>
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">07 · 梯队三</span><span class="vname">果冻糖 CANDY</span>
+      <span class="vtag">软糖质感 · 多巴胺配色</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">紫夜底 + 按标签分配糖果色（动物=蜜橙/猫猫=草莓/默认=薄荷，六色板循环）+ 果冻立体件（顶 45% 受光提亮 + 底缘同色加深带）+ hover 鼓起 + 药丸按钮带计数徽章 + 大图 6px 奶油糖纸边。实测顶底亮度差 110/255，立体感扎实。</div>
+    <div class="shots">
+      <div class="shot"><a href="07-candy/shot_panel.png" target="_blank"><img src="07-candy/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>61 KB</span></div></div>
+      <div class="shot"><a href="07-candy/shot_hover.png" target="_blank"><img src="07-candy/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>果冻鼓起</span></div></div>
+      <div class="shot"><a href="07-candy/shot_mgr_sel.png" target="_blank"><img src="07-candy/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>糖果勾选气泡</span></div></div>
+    </div>
+    <div class="vnotes">「表情包是快乐的」的理直气壮版；日常工具是否压得住这份活泼，纯看口味。</div>
+  </section>
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">10 · 梯队三</span><span class="vname">复古像素 RETRO-PIXEL</span>
+      <span class="vtag">System 7 / Win95 · GDI 主场</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">经典 Mac 灰 #DDDDDD 不透明面板 + 2px 黑硬边 double-bevel + 黑白条纹标题栏 + 斜面按钮三态 + 表格网格（1px 黑线密排）+ 真 Win95 滚动条（刻痕 thumb + 像素箭头）+ 窗中窗条纹预览 + Mac 蓝罩选中反白。</div>
+    <div class="shots">
+      <div class="shot"><a href="10-retro-pixel/shot_panel.png" target="_blank"><img src="10-retro-pixel/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>56 KB</span></div></div>
+      <div class="shot"><a href="10-retro-pixel/shot_hover.png" target="_blank"><img src="10-retro-pixel/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>状态条文件名</span></div></div>
+      <div class="shot"><a href="10-retro-pixel/shot_mgr_sel.png" target="_blank"><img src="10-retro-pixel/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>蓝罩反白</span></div></div>
+    </div>
+    <div class="vnotes">完成度惊喜的方向（50 项探针全过）；怀旧滤镜是否耐看因人而异。</div>
+  </section>
+
+  <section class="variant">
+    <div class="vhead">
+      <span class="vnum">06 · 梯队三</span><span class="vname">霓虹终端 NEON-TERM</span>
+      <span class="vtag">CRT 磷光屏 · 键盘手领地</span><span class="status ok">验收通过</span>
+    </div>
+    <div class="vdesc">近黑绿屏 + 3px 周期扫描线 + 边缘磷光 + 双线框四角十字 + MEME://TERMINAL 标题 + 命令行搜索（> 前缀 + 反色块状光标）+ [方括号] 标签 + 磷激发 hover + ▓▓▓░░ 块状滚动进度 + 琥珀严格限 GIF/警示。全站 Consolas 硬边矩形。</div>
+    <div class="shots">
+      <div class="shot"><a href="06-terminal/shot_panel.png" target="_blank"><img src="06-terminal/shot_panel.png" alt=""></a><div class="cap"><b>速发常态</b><span>60 KB</span></div></div>
+      <div class="shot"><a href="06-terminal/shot_hover.png" target="_blank"><img src="06-terminal/shot_hover.png" alt=""></a><div class="cap"><b>悬停态</b><span>磷激发亮框</span></div></div>
+      <div class="shot"><a href="06-terminal/shot_mgr_sel.png" target="_blank"><img src="06-terminal/shot_mgr_sel.png" alt=""></a><div class="cap"><b>管理模式</b><span>SYS: 状态行</span></div></div>
+    </div>
+    <div class="vnotes">「另一台机器」的沉浸感最强；口味最窄但命中时是真爱。</div>
+  </section>
+
+  <!-- VARIANTS_INSERT -->
+
+</main>
+<footer>
+  生成于 2026-09-19 夜间自主会话 · 全部变体可用 <code>variants/&lt;名字&gt;/out/MemePanel.exe -show</code> 真机体验（明早请自行运行验证交互）·
+  设计纪律参考 impeccable / ui-visual-audit skills · 每个变体的详细改动见其目录下 NOTES.md
+</footer>
+</body>
+</html>

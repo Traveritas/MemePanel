@@ -1,0 +1,22 @@
+# ---- 构建产物（任意深度；各 variant 的 out/ 同样生效）----
+out/
+debug/
+*.exe
+*.obj
+*.res
+*.pdb
+*.ilk
+*.exp
+
+# ---- 运行时数据（库索引/偏好/日志/缩略图）----
+index.bin
+index.bin.bak
+index.bin.tmp
+prefs.cfg
+theme.cfg
+imedbg.log
+thumbs/
+memes/
+
+# ---- 例外：内嵌的第三方 SDK 工具保留入库 ----
+!app/sdk/**

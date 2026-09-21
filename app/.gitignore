@@ -1,0 +1,8 @@
+out/
+*.obj
+*.exe
+*.pdb
+memes/
+thumbs/
+index.bin
+index.bin.tmp

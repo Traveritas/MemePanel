@@ -1,0 +1,9 @@
+win=1544,1064 mgr=1 dpi=120
+panel=4,4-1540,1060
+search=27,19-1517,64 sepY=74
+chipY=85,113
+recShow=0 rec0=0,0-0,0
+grid=27,140-1517,1014 rows=6 rowH=70 rowGap=5 first=0
+footer=27,1024-1517,1047
+preview=1312,801-1522,1011
+hover=3 count=42

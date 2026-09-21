@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+:root{
+  --ink:#E7EBF6; --dim:rgba(231,235,246,.55); --faint:rgba(231,235,246,.32);
+  --accent:#7AA2FF; --accent2:#B28BFF; --edge:rgba(255,255,255,.12);
+  --glass:rgba(255,255,255,.05); --cellbg:rgba(255,255,255,.03);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{
+  font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:var(--ink);
+  background:linear-gradient(164deg,rgba(28,31,44,.94),rgba(17,19,29,.90));
+  user-select:none;-webkit-user-select:none;cursor:default;
+}
+#panel{position:relative;display:flex;flex-direction:column;height:100%;padding:14px 16px 10px}
+#panel::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(620px 190px at 10% -6%,rgba(255,255,255,.10),transparent 62%)}
+/* ---------- 检索行 ---------- */
+#rowTop{display:flex;align-items:center;gap:12px;flex:0 0 auto;margin-bottom:12px}
+#search{flex:1;display:flex;align-items:center;gap:9px;height:38px;border-radius:11px;
+  padding:0 13px;background:rgba(5,7,12,.55);border:1px solid rgba(255,255,255,.10)}
+#search:focus-within{border-color:rgba(122,162,255,.45)}
+#search svg{flex:0 0 auto;opacity:.5}
+#q{flex:1;background:transparent;border:none;outline:none;color:var(--ink);font-size:13px;font-family:inherit}
+#q::placeholder{color:var(--faint)}
+#btnClose{width:28px;height:28px;border-radius:9px;background:var(--glass);
+  border:1px solid var(--edge);color:var(--faint);font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+#btnClose:hover{color:var(--ink);background:rgba(255,255,255,.1)}
+/* ---------- 操作行（管理模式的按钮组）---------- */
+#rowOps{display:none;align-items:center;gap:7px;flex:0 0 auto;margin-bottom:12px}
+.mgr #rowOps{display:flex}
+.mgr #rowRecent{display:none}
+.chip{font-size:12px;border-radius:99px;padding:5px 13px;cursor:pointer;color:var(--dim);
+  border:1px solid var(--edge);background:var(--glass);white-space:nowrap}
+.chip:hover{color:var(--ink);border-color:rgba(255,255,255,.25)}
+.chip.on{color:#EEF1FF;border-color:rgba(122,162,255,.60);
+  background:linear-gradient(120deg,rgba(122,162,255,.30),rgba(178,139,255,.22));
+  box-shadow:0 0 16px rgba(122,162,255,.30)}
+.spacer{flex:1}
+.mbtn{font-size:12px;border-radius:15px;padding:6px 14px;cursor:pointer;color:var(--dim);
+  border:1px solid var(--edge);background:var(--glass);white-space:nowrap;font-family:inherit}
+.mbtn:hover{color:var(--ink);border-color:rgba(255,255,255,.25)}
+.mbtn.armed{color:#ffe6e6;border-color:rgba(255,110,110,.9);
+  background:linear-gradient(120deg,rgba(255,110,110,.35),rgba(255,80,80,.25));
+  box-shadow:0 0 14px rgba(255,90,90,.35)}
+.mbtn:disabled{opacity:.4;cursor:default}
+/* ---------- 最近行 ---------- */
+#rowRecent{display:flex;gap:9px;flex:0 0 auto;margin-bottom:12px}
+.recent{width:56px;height:56px}
+/* ---------- 网格 ---------- */
+#grid{flex:1;position:relative;overflow-y:auto;overflow-x:hidden;border-radius:4px}
+#grid::-webkit-scrollbar{width:5px}
+#grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+#content{position:relative}
+.cell{position:absolute;width:56px;height:56px;border-radius:11px;cursor:pointer;
+  background:var(--cellbg);border:1px solid rgba(255,255,255,.075);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);overflow:hidden;
+  transition:transform 90ms ease}
+.cell:hover{transform:translateY(-2px);border-color:rgba(122,162,255,.75);
+  background:radial-gradient(125% 125% at 30% 18%,rgba(122,162,255,.20),rgba(255,255,255,.03) 62%);
+  box-shadow:0 0 18px rgba(122,162,255,.32)}
+.mgr .cell{width:96px;height:96px;border-radius:14px}
+.mgr .cell img{width:100%;height:100%}
+.cell img{width:100%;height:100%;object-fit:contain}
+.cell .name{position:absolute;left:0;right:0;bottom:0;font-size:9px;color:#fff;text-align:center;
+  padding:9px 3px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:linear-gradient(transparent,rgba(8,9,14,.9) 55%);display:none;pointer-events:none}
+.cell:hover .name{display:block}
+.gifbadge{position:absolute;right:3px;bottom:3px;font-size:8px;letter-spacing:.08em;
+  color:rgba(231,235,246,.85);background:rgba(13,15,23,.66);border:1px solid rgba(255,255,255,.10);
+  border-radius:4px;padding:0 3px;pointer-events:none}
+.selbox{position:absolute;left:5px;top:5px;width:18px;height:16px;border-radius:5px;
+  background:var(--accent);display:none;align-items:center;justify-content:center;pointer-events:none}
+.selbox::after{content:"✓";color:#fff;font-size:11px;font-weight:700}
+.cell.sel .selbox{display:flex}
+.cell.sel{border-color:rgba(122,162,255,.95);box-shadow:0 0 14px rgba(122,162,255,.4)}
+/* ---------- 信息行 ---------- */
+#footer{flex:0 0 auto;display:flex;align-items:center;padding:8px 3px 2px;font-size:11px;color:var(--dim)}
+#status{color:var(--dim)} #count{margin-left:auto;color:var(--faint);font-family:Consolas,monospace;font-size:10px}
+/* ---------- 空态 ---------- */
+#empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  color:rgba(231,235,246,.45);font-size:14px;pointer-events:none}
+/* ---------- 大图浮层 ---------- */
+#preview{position:absolute;right:14px;bottom:44px;width:168px;height:168px;border-radius:14px;
+  background:rgba(13,15,23,.95);border:1px solid rgba(255,255,255,.22);
+  box-shadow:0 4px 10px rgba(0,0,0,.35),0 26px 56px rgba(0,0,0,.55);
+  display:none;z-index:5;overflow:hidden;pointer-events:none}
+#preview img{width:100%;height:100%;object-fit:contain}
+</style>
+</head>
+<body>
+<div id="panel">
+  <div id="rowTop">
+    <div id="search">
+      <svg width="13" height="13" viewBox="0 0 14 14"><circle cx="6" cy="6" r="4.4" fill="none" stroke="#E7EBF6" stroke-width="1.5"/><line x1="9.4" y1="9.4" x2="13" y2="13" stroke="#E7EBF6" stroke-width="1.5"/></svg>
+      <input id="q" placeholder="" autocomplete="off" spellcheck="false">
+    </div>
+    <button id="btnClose" title="关闭">✕</button>
+  </div>
+  <div id="rowOps">
+    <span id="chips"></span><span class="spacer"></span>
+    <button class="mbtn" id="bFix">修后缀</button>
+    <button class="mbtn" id="bDed">去重</button>
+    <button class="mbtn" id="bDel" style="min-width:64px">删除</button>
+    <button class="mbtn" id="bRen">重命名</button>
+  </div>
+  <div id="rowRecent"></div>
+  <div id="grid">
+    <div id="content"></div>
+    <div id="empty">把表情图拖到这里</div>
+  </div>
+  <div id="footer"><span id="status"></span><span id="count"></span></div>
+  <div id="preview"><img></div>
+</div>
+<script>
+"use strict";
+// ================= 数据 =================
+let ITEMS = [];            // {ei,name,gif,mask}
+let TAGS = [];             // {id,name}
+let RECENTS = [];          // ei
+let modeMgr = false;
+let filterTag = -1;        // -1 全部
+let query = "";
+let sel = new Set();       // ei
+let armTimer = 0;
+
+const $ = s => document.querySelector(s);
+const grid = $("#grid"), content = $("#content");
+const CELL = () => modeMgr ? 96 : 56, GAP = () => modeMgr ? 10 : 8, PADL = 2, PADT = 2;
+
+function thumbUrl(name){ return "http://thumbs.local/" + encodeURIComponent(name) + ".jpg"; }
+function memUrl(name){ return "http://memes.local/" + encodeURIComponent(name); }
+function post(s){ window.chrome.webview.postMessage(s); }
+
+// ================= 过滤（JS 侧全量） =================
+function filtered(){
+  return ITEMS.filter(it =>
+    (filterTag < 0 || ((it.mask >> filterTag) & 1)) &&
+    (!query || it.name.toLowerCase().includes(query)));
+}
+
+// ================= 渲染（行虚拟滚动） =================
+let view = [], firstRow = 0, rowsVis = 1, cols = 1;
+function layout(){
+  const w = grid.clientWidth, h = grid.clientHeight;
+  const cw = CELL() + GAP();
+  cols = Math.max(1, Math.floor((w - PADL) / cw));
+  rowsVis = Math.max(1, Math.ceil(h / cw) + 1);
+}
+function render(){
+  view = filtered();
+  layout();
+  const n = view.length;
+  const cw = CELL() + GAP();
+  const rows = Math.ceil(n / cols);
+  content.style.height = (rows * cw + PADT) + "px";
+  $("#empty").style.display = n ? "none" : "flex";
+  // 当前滚动位置对应的起始行
+  const top = grid.scrollTop;
+  firstRow = Math.max(0, Math.floor(top / cw) - 1);
+  // 构建窗口内格子
+  let html = "";
+  const end = Math.min(rows, firstRow + rowsVis + 1);
+  for (let r = firstRow; r < end; r++)
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      if (i >= n) break;
+      const it = view[i];
+      const x = PADL + c * cw, y = PADT + r * cw;
+      html += `<div class="cell${sel.has(it.ei) ? " sel" : ""}" data-ei="${it.ei}" style="left:${x}px;top:${y}px">` +
+        `<img loading="lazy" src="${thumbUrl(it.name)}" draggable="false">` +
+        (it.gif ? `<span class="gifbadge">GIF</span>` : "") +
+        (modeMgr ? `<span class="selbox"></span>` : "") +
+        `<span class="name"></span></div>`;
+    }
+  content.innerHTML = html;
+  content.querySelectorAll(".name").forEach(el => {
+    const cell = el.parentElement, ei = +cell.dataset.ei;
+    const it = ITEMS.find(x => x.ei === ei);
+    if (it) el.textContent = it.name;
+  });
+  const rc = RECENTS.length ? RECENTS : [];
+  $("#rowRecent").innerHTML = rc.slice(0,7).map(ei => {
+    const it = ITEMS.find(x => x.ei === ei);
+    return it ? `<div class="cell recent" data-ei="${ei}" style="position:relative;left:auto;top:auto">
+      <img loading="lazy" src="${thumbUrl(it.name)}" draggable="false">
+      ${it.gif ? `<span class="gifbadge">GIF</span>` : ""}</div>` : "";
+  }).join("");
+  $("#count").textContent = modeMgr ? `选中 ${sel.size} · 共 ${n}` : "";
+  document.body.classList.toggle("mgr", modeMgr);
+}
+
+// ================= C → JS 数据入口 =================
+window.MP = {
+  items(s){                          // "ei|name|gif|mask\n..."
+    ITEMS = s.split("\n").filter(Boolean).map(line => {
+      const p = line.split("|");
+      return { ei:+p[0], name:p[1], gif:p[2] === "1", mask:parseFloat(p[3]||"0") };
+    });
+    render();
+  },
+  tags(s){                           // "id|name\n..."
+    TAGS = s.split("\n").filter(Boolean).map(l => { const p = l.split("|"); return { id:+p[0], name:p[1] }; });
+    renderChips();
+  },
+  recents(s){ RECENTS = s ? s.split(",").map(Number) : []; render(); },
+  mode(m){ modeMgr = !!m; disarm(); sel.clear(); render(); renderChips(); },
+  status(s){ $("#status").textContent = s; },
+  keep(selEis){ sel = new Set(selEis.split(",").map(Number)); render(); }
+};
+
+function renderChips(){
+  let h = `<span class="chip${filterTag < 0 ? " on" : ""}" data-id="-1">全部</span>` +
+    TAGS.map(t => `<span class="chip${filterTag === t.id ? " on" : ""}" data-id="${t.id}">${t.name}</span>`).join("");
+  $("#chips").innerHTML = h;
+}
+
+// ================= 交互 =================
+$("#q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); render(); });
+$("#btnClose").addEventListener("click", () => { if (modeMgr) post("modemgr|0"); else post("hide"); });
+
+$("#chips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip"); if (!chip) return;
+  const id = +chip.dataset.id;
+  if (modeMgr && sel.size > 0 && id >= 0) { post("tag|" + id + "|" + [...sel].join(",")); return; }
+  filterTag = (filterTag === id) ? -1 : id;
+  renderChips(); render();
+});
+
+grid.addEventListener("click", e => {
+  const cell = e.target.closest(".cell"); if (!cell) return;
+  const ei = +cell.dataset.ei;
+  if (modeMgr) {
+    if (e.ctrlKey) { sel.has(ei) ? sel.delete(ei) : sel.add(ei); }
+    else { sel.clear(); sel.add(ei); }
+    disarm(); render();
+  } else post("paste|" + ei);
+});
+$("#rowRecent").addEventListener("click", e => {
+  const cell = e.target.closest(".cell"); if (cell) post("paste|" + cell.dataset.ei);
+});
+
+// hover：名字条由 CSS；大图浮层 280ms
+let pvTimer = 0;
+grid.addEventListener("mousemove", e => {
+  const cell = e.target.closest(".cell");
+  if (!cell) { $("#preview").style.display = "none"; return; }
+  const ei = +cell.dataset.ei;
+  clearTimeout(pvTimer);
+  pvTimer = setTimeout(() => {
+    const it = ITEMS.find(x => x.ei === ei); if (!it) return;
+    $("#preview img").src = memUrl(it.name);
+    $("#preview").style.display = "block";
+  }, 280);
+});
+grid.addEventListener("mouseleave", () => { $("#preview").style.display = "none"; clearTimeout(pvTimer); });
+grid.addEventListener("scroll", () => { $("#preview").style.display = "none"; render(); });
+window.addEventListener("resize", render);
+
+// 键盘
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    if (modeMgr) { post("modemgr|0"); }
+    else post("hide");
+  } else if (e.key === "Enter" && !modeMgr) {
+    const f = filtered(); if (f.length) post("paste|" + f[0].ei);
+  } else if (e.key === "F2" && modeMgr && sel.size === 1) {
+    beginRename();
+  } else if (e.key === "Delete" && modeMgr && sel.size) {
+    armDelete();
+  }
+});
+
+// ================= 管理操作 =================
+let renaming = null;
+function beginRename(){
+  const ei = [...sel][0];
+  const it = ITEMS.find(x => x.ei === ei); if (!it) return;
+  renaming = ei;
+  $("#q").value = it.name; $("#q").focus(); $("#q").select();
+  MP.status("重命名：回车确认 · Esc 取消");
+  $("#q").onkeydown = ev => {
+    if (renaming == null) return;
+    ev.stopPropagation();
+    if (ev.key === "Enter") {
+      const nn = $("#q").value.trim();
+      post("ren|" + ei + "|" + nn);
+      endRename();
+    } else if (ev.key === "Escape") endRename();
+  };
+}
+function endRename(){
+  renaming = null; $("#q").value = ""; $("#q").onkeydown = null; MP.status("");
+}
+
+$("#bRen").addEventListener("click", () => { if (sel.size === 1) beginRename(); });
+function disarm(){ clearTimeout(armTimer); $("#bDel").classList.remove("armed"); $("#bDel").textContent = "删除"; }
+function armDelete(){
+  const b = $("#bDel");
+  if (!b.classList.contains("armed")) {
+    b.classList.add("armed"); b.textContent = "确认删除";
+    clearTimeout(armTimer);
+    armTimer = setTimeout(disarm, 3000);
+  } else {
+    disarm();
+    post("del|" + [...sel].join(","));
+  }
+}
+$("#bDel").addEventListener("click", () => { if (sel.size) armDelete(); });
+$("#bDed").addEventListener("click", () => post("dedup"));
+$("#bFix").addEventListener("click", () => post("fixext"));
+
+// 拖放导入（HTML drop：文件内容走 base64 桥）
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => {
+  e.preventDefault();
+  const files = [...(e.dataTransfer?.files || [])].slice(0, 200);
+  let pending = files.length; if (!pending) return;
+  files.forEach(f => {
+    const r = new FileReader();
+    r.onload = () => {
+      post("dropfile|" + encodeURIComponent(f.name) + "|" + btoa(String.fromCharCode(...new Uint8Array(r.result))));
+      if (--pending === 0) MP.status("导入完成");
+    };
+    r.readAsArrayBuffer(f);
+  });
+});
+
+// ================= 启动 =================
+window.addEventListener("load", () => post("webready"));
+</script>
+</body>
+</html>
